@@ -30,19 +30,14 @@
             "URL": "xxxx",
             "CallbackURL": "https://xxxx/release/callback",
             "TargetVideoSpec": {
-                "Format": "mp4",
                 "Resolution": {
-                    "Strategy": "Fixed",
                     "Width": 1600,
                     "Height": 900
                 },
-                "Codec": "h264",
                 "Framerate": {
-                    "Strategy": "Fixed",
                     "Value": 15
                 },
                 "Bitrate": {
-                    "Strategy": "Fixed",
                     "Value": 500
                 }
             },
