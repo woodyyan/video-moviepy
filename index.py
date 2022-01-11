@@ -1,17 +1,12 @@
 import json
 import logging
-import os
-import subprocess
-import sys
-import time
 
 import requests
-
-from qcloud_vod.model import VodUploadRequest
-from qcloud_vod.vod_upload_client import VodUploadClient
 from moviepy.editor import *
-
+from picture import Picture
 # 日志配置
+from text import Text
+
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger()
 logger.setLevel(level=logging.INFO)
@@ -35,8 +30,22 @@ def main_handler(event, context):
         height = req_param['Data']['Input']['Resolution']['Height']
         framerate = req_param['Data']['Input']['Framerate']
         bitrate = req_param['Data']['Input']['Bitrate']
-        texts = req_param['Data']['Input']['Texts']
-        pictures = req_param['Data']['Input']['Pictures']
+        texts_json = req_param['Data']['Input']['Texts']
+        texts = []
+        for text in texts_json:
+            content = text['Content']
+            x = text['X']
+            y = text['Y']
+            size = text['Size']
+            texts.append(Text(content, x, y, size))
+        pictures_json = req_param['Data']['Input']['Pictures']
+        pictures = []
+        for picture in pictures_json:
+            url = picture['URL']
+            x = picture['X']
+            y = picture['Y']
+            width = picture['Width']
+            pictures.append(Picture(url, x, y, width))
         vod_region = req_param['Data']['Output']['Vod']['Region']
         sub_app_id = req_param['Data']['Output']['Vod']['SubAppId']
 
