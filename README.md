@@ -28,6 +28,7 @@
     "Data": {
         "Input": {
             "URL": "xxxx",
+            "Audio": true,
             "CallbackURL": "https://xxxx/release/callback",
             "Resolution": {
                 "Width": 1600,
@@ -73,6 +74,7 @@
 | 字段 | 类型 | 解释 |
 | --- | --- | --- |
 | URL | string | 要处理的视频链接 |
+| Audio | bool | 是否保留音频 |
 | CallbackURL | string | 回调URL |
 | TargetVideoSpec.Resolution | int | 目标分辨率 |
 | TargetVideoSpec.Framerate | int | 目标帧率 |
