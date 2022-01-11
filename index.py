@@ -26,6 +26,48 @@ def main_handler(event, context):
 
     req_body = event['body']
     callback_url = ""
+    try:
+        req_param = json.loads(req_body)
+        logger.info("输入参数: " + json.dumps(req_param))
+        video_url = req_param['Data']['Input']['URL']
+        callback_url = req_param['Data']['Input']['CallbackURL']
+        width = req_param['Data']['Input']['Resolution']['Width']
+        height = req_param['Data']['Input']['Resolution']['Height']
+        framerate = req_param['Data']['Input']['Framerate']
+        bitrate = req_param['Data']['Input']['Bitrate']
+        texts = req_param['Data']['Input']['Texts']
+        pictures = req_param['Data']['Input']['Pictures']
+        vod_region = req_param['Data']['Output']['Vod']['Region']
+        sub_app_id = req_param['Data']['Output']['Vod']['SubAppId']
+
+        if not callback_url:
+            logger.warning("Callback url是空的，请检查。")
+    except Exception as err:
+        message = "bad request: %s, please check." % (str(err))
+        logger.error(message)
+        resp = {
+            'ErrorCode': 'InvalidParameter',
+            'ErrorMessage': message,
+            'RequestID': request_id
+        }
+        callback_body = {
+            "Result": "Failure",
+            "ErrorCode": "InvalidParameter",
+            "ErrorMessage": "Invalid parameter: " + str(err),
+            "RequestId": request_id
+        }
+        callback(callback_url, callback_body)
+        return json.dumps(resp)
+
+
+# 回调逻辑。
+def callback(url, data):
+    if not url:
+        logger.info("Callback url is empty, no need to callback.")
+        return
+
+    response = requests.post(url, json=data)
+    logger.info("Callback response:", response.text.encode('utf8'))
 
 
 if __name__ == '__main__':

@@ -29,18 +29,12 @@
         "Input": {
             "URL": "xxxx",
             "CallbackURL": "https://xxxx/release/callback",
-            "TargetVideoSpec": {
-                "Resolution": {
-                    "Width": 1600,
-                    "Height": 900
-                },
-                "Framerate": {
-                    "Value": 15
-                },
-                "Bitrate": {
-                    "Value": 500
-                }
+            "Resolution": {
+                "Width": 1600,
+                "Height": 900
             },
+            "Framerate": 15,
+            "Bitrate": 500,
             "Texts": [
                 {
                     "Content": "xxxx",
