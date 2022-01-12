@@ -86,13 +86,10 @@ def main_handler(event, context):
         logger.info('开始转换分辨率：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         clip = VideoFileClip(local_file)
         clip.set_fps(framerate)
-        print(framerate)
-        print(height)
-        print(clip.size[1])
         margin_len = int((height - int(clip.size[1])) / 2)
-        print(margin_len)
         clip = clip.resize(width=width)
-        print(width)
+        logger.info(
+            '帧率：%s，高：%s，宽：%s，原高：%s，原宽：%s，边：%s' % (framerate, height, width, clip.size[1], clip.size[0], margin_len))
         clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
         logger.info('转换分辨率完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
@@ -126,6 +123,7 @@ def main_handler(event, context):
     callback(callback_url, callback_body)
 
     # 清理工作目录
+    # TODO
     # clear_files('/tmp/')
 
     return callback_body
@@ -255,11 +253,4 @@ if __name__ == '__main__':
     os.environ.setdefault("TENCENTCLOUD_SECRETKEY", TENCENTCLOUD_SECRETKEY)
     main_handler(event, context)
 
-    # clip = VideoFileClip('/Users/yansongbai/Desktop/十方/素材文件及合成视频预览/5成果视频.mp4')
-    # clip.set_fps(15)
-    # clip = clip.resize(width=720)
-    # margin_len = int((1280 - int(clip.size[1])) / 2)
-    # clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
-    # output_video = '/Users/yansongbai/Desktop/十方/素材文件及合成视频预览/output.mp4'
-    # clip.write_videofile(output_video, codec='mpeg4', verbose=False, audio=False)
     print('')
