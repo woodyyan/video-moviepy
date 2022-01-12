@@ -4,6 +4,7 @@ import subprocess
 import time
 
 import requests
+from config import TENCENTCLOUD_SECRETID, TENCENTCLOUD_SECRETKEY
 from moviepy.editor import *
 from moviepy.editor import VideoFileClip
 from picture import Picture
@@ -53,7 +54,7 @@ def main_handler(event, context):
             url = picture['URL']
             x = picture['X']
             y = picture['Y']
-            width = picture['Width']
+            picture_width = picture['Width']
             pictures.append(Picture(url, x, y, width))
         vod_region = req_param['Data']['Output']['Vod']['Region']
         sub_app_id = req_param['Data']['Output']['Vod']['SubAppId']
@@ -85,7 +86,14 @@ def main_handler(event, context):
         logger.info('开始转换分辨率：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         clip = VideoFileClip(local_file)
         clip.set_fps(framerate)
-        clip.resize(newsize=(width, height))
+        print(framerate)
+        print(height)
+        print(clip.size[1])
+        margin_len = int((height - int(clip.size[1])) / 2)
+        print(margin_len)
+        clip = clip.resize(width=width)
+        print(width)
+        clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
         logger.info('转换分辨率完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         logger.info('开始渲染视频：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -118,7 +126,7 @@ def main_handler(event, context):
     callback(callback_url, callback_body)
 
     # 清理工作目录
-    clear_files('/tmp/')
+    # clear_files('/tmp/')
 
     return callback_body
 
@@ -130,7 +138,7 @@ def callback(url, data):
         return
 
     response = requests.post(url, json=data)
-    logger.info("Callback response:", response.text.encode('utf8'))
+    logger.info("Callback response: %s" % str(response.text.encode('utf8')))
 
 
 # 视频上传VOD，sdk自动选择普通上传还是分片上传
@@ -198,7 +206,7 @@ if __name__ == '__main__':
                         "Action": "SpliceVideo",
                         "Data": {
                             "Input": {
-                                "URL": "http://1500009267.vod2.myqcloud.com/6c9c6980vodcq1500009267/9615e7b2387702294123506819/7wSZx0KFAj8A.mp4",
+                                "URL": "http://1500009267.vod2.myqcloud.com/6c9c6980vodcq1500009267/0d7032f3387702294461673432/pz3wNIkIjCEA.mp4",
                                             "Audio": true,
                                 "CallbackURL": "https://enk885gn0j1qox.m.pipedream.net",
                                 "Resolution": {
@@ -243,6 +251,15 @@ if __name__ == '__main__':
         "request_id": "123"
     }
 
+    os.environ.setdefault("TENCENTCLOUD_SECRETID", TENCENTCLOUD_SECRETID)
+    os.environ.setdefault("TENCENTCLOUD_SECRETKEY", TENCENTCLOUD_SECRETKEY)
+    main_handler(event, context)
 
-
+    # clip = VideoFileClip('/Users/yansongbai/Desktop/十方/素材文件及合成视频预览/5成果视频.mp4')
+    # clip.set_fps(15)
+    # clip = clip.resize(width=720)
+    # margin_len = int((1280 - int(clip.size[1])) / 2)
+    # clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
+    # output_video = '/Users/yansongbai/Desktop/十方/素材文件及合成视频预览/output.mp4'
+    # clip.write_videofile(output_video, codec='mpeg4', verbose=False, audio=False)
     print('')
