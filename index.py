@@ -85,11 +85,16 @@ def main_handler(event, context):
 
         logger.info('开始转换分辨率：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         clip = VideoFileClip(local_file)
-        clip.set_fps(framerate)
-        margin_len = int((height - int(clip.size[1])) / 2)
-        clip = clip.resize(width=width)
+        if framerate != clip.fps:
+            clip.set_fps(framerate)
+        source_height = int(clip.size[1])
+        source_width = int(clip.size[0])
+        if source_width != width or source_height != height:
+            clip = clip.resize(width=width)
+            source_height = int(clip.size[1])
+            margin_len = int((height - source_height) / 2)
         logger.info(
-            '帧率：%s，高：%s，宽：%s，原高：%s，原宽：%s，边：%s' % (framerate, height, width, clip.size[1], clip.size[0], margin_len))
+            '帧率：%s，高：%s，宽：%s，原高：%s，原宽：%s，边：%s' % (framerate, height, width, source_height, source_width, margin_len))
         clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
         logger.info('转换分辨率完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
