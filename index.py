@@ -7,6 +7,7 @@ import requests
 from config import TENCENTCLOUD_SECRETID, TENCENTCLOUD_SECRETKEY
 from moviepy.editor import *
 from moviepy.editor import VideoFileClip
+from parameters import Params
 from picture import Picture
 # 日志配置
 from qcloud_vod.model import VodUploadRequest
@@ -31,44 +32,12 @@ def main_handler(event, context):
     req_body = event['body']
     callback_url = ""
     try:
-        req_param = json.loads(req_body)
-        logger.info("输入参数: " + json.dumps(req_param))
-        video_url = req_param['Data']['Input']['URL']
-        audio = req_param['Data']['Input']['Audio']
-        callback_url = req_param['Data']['Input']['CallbackURL']
-        width = req_param['Data']['Input']['Resolution']['Width']
-        height = req_param['Data']['Input']['Resolution']['Height']
-        framerate = req_param['Data']['Input']['Framerate']
-        bitrate = req_param['Data']['Input']['Bitrate']
-        texts_json = req_param['Data']['Input']['Texts']
-        texts = []
-        for text in texts_json:
-            content = text['Content']
-            x = text['X']
-            y = text['Y']
-            size = text['Size']
-            texts.append(Text(content, x, y, size))
-        pictures_json = req_param['Data']['Input']['Pictures']
-        pictures = []
-        for picture in pictures_json:
-            url = picture['URL']
-            x = picture['X']
-            y = picture['Y']
-            picture_width = picture['Width']
-            pictures.append(Picture(url, x, y, width))
-        vod_region = req_param['Data']['Output']['Vod']['Region']
-        sub_app_id = req_param['Data']['Output']['Vod']['SubAppId']
+        params = extract_parameters(req_body)
 
         if not callback_url:
             logger.warning("Callback url是空的，请检查。")
     except Exception as err:
-        message = "bad request: %s, please check." % (str(err))
-        logger.error(message)
-        resp = {
-            'ErrorCode': 'InvalidParameter',
-            'ErrorMessage': message,
-            'RequestID': request_id
-        }
+        logger.error("bad request: %s, please check." % (str(err)))
         callback_body = {
             "Result": "Failure",
             "ErrorCode": "InvalidParameter",
@@ -76,35 +45,48 @@ def main_handler(event, context):
             "RequestId": request_id
         }
         callback(callback_url, callback_body)
-        return json.dumps(resp)
+        return json.dumps(callback_body)
 
     try:
         logger.info('开始下载视频：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        local_file = download(video_url)
+        local_file = download(params.video_url)
         logger.info('视频下载完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-        logger.info('开始转换分辨率：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        logger.info('开始处理视频：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         clip = VideoFileClip(local_file)
-        if framerate != clip.fps:
-            clip.set_fps(framerate)
+        # 转换分辨率
+        if params.framerate != clip.fps:
+            clip.set_fps(params.framerate)
         source_height = int(clip.size[1])
         source_width = int(clip.size[0])
-        if source_width != width or source_height != height:
-            clip = clip.resize(width=width)
+        if source_width != params.width or source_height != params.height:
+            clip = clip.resize(width=params.width)
             source_height = int(clip.size[1])
-            margin_len = int((height - source_height) / 2)
-        logger.info(
-            '帧率：%s，高：%s，宽：%s，原高：%s，原宽：%s，边：%s' % (framerate, height, width, source_height, source_width, margin_len))
-        clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
-        logger.info('转换分辨率完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            margin_len = int((params.height - source_height) / 2)
+            logger.info(
+                '帧率：%s，高：%s，宽：%s，原高：%s，原宽：%s，边：%s' % (
+                    params.framerate, params.height, params.width, source_height, source_width, margin_len))
+            clip = clip.margin(left=0, right=0, top=margin_len, bottom=margin_len)
+
+        # 添加文字
+        txt_clips = []
+        if len(params.texts) > 0:
+            for text in params.texts:
+                logger.info('字：%s，大小：%s，x：%s，y：%s' % (text.content, text.size, text.x, text.y))
+                txt_clip = TextClip(text.content, fontsize=text.size, color='white')
+                txt_clip = txt_clip.set_position(("center", "top")).set_duration(clip.duration)
+                txt_clips.append(txt_clip)
+
+        logger.info('处理视频完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         logger.info('开始渲染视频：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         output_video = '/tmp/output.mp4'
-        clip.write_videofile(output_video, codec='mpeg4', verbose=False, audio=audio)
+        video = CompositeVideoClip([clip] + txt_clips)
+        video.write_videofile(output_video, codec='mpeg4', verbose=False, audio=params.audio)
         logger.info('渲染视频完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         logger.info('开始上传视频：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        uploaded_video_url = upload_vod(vod_region, sub_app_id, output_video)
+        uploaded_video_url = upload_vod(params.vod_region, params.sub_app_id, output_video)
         logger.info('上传视频完成：' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         callback_body = {
@@ -132,6 +114,37 @@ def main_handler(event, context):
     # clear_files('/tmp/')
 
     return callback_body
+
+
+def extract_parameters(req_body):
+    req_param = json.loads(req_body)
+    logger.info("输入参数: " + json.dumps(req_param))
+    video_url = req_param['Data']['Input']['URL']
+    audio = req_param['Data']['Input']['Audio']
+    callback_url = req_param['Data']['Input']['CallbackURL']
+    width = req_param['Data']['Input']['Resolution']['Width']
+    height = req_param['Data']['Input']['Resolution']['Height']
+    framerate = req_param['Data']['Input']['Framerate']
+    bitrate = req_param['Data']['Input']['Bitrate']
+    texts_json = req_param['Data']['Input']['Texts']
+    texts = []
+    for text in texts_json:
+        content = text['Content']
+        x = text['X']
+        y = text['Y']
+        size = text['Size']
+        texts.append(Text(content, x, y, size))
+    pictures_json = req_param['Data']['Input']['Pictures']
+    pictures = []
+    for picture in pictures_json:
+        url = picture['URL']
+        x = picture['X']
+        y = picture['Y']
+        picture_width = picture['Width']
+        pictures.append(Picture(url, x, y, width))
+    vod_region = req_param['Data']['Output']['Vod']['Region']
+    sub_app_id = req_param['Data']['Output']['Vod']['SubAppId']
+    return Params(video_url, audio, callback_url, framerate, height, width, texts, pictures, vod_region, sub_app_id)
 
 
 # 回调逻辑。
@@ -220,16 +233,16 @@ if __name__ == '__main__':
                                 "Bitrate": 500,
                                 "Texts": [
                                     {
-                                        "Content": "xxxx",
+                                        "Content": "xxxxxxxxxxx",
                                         "X": 1,
                                         "Y": 2,
-                                        "Size": 3
+                                        "Size": 30
                                     },
                                     {
-                                        "Content": "xxxx",
+                                        "Content": "YYYYYYY",
                                         "X": 1,
                                         "Y": 2,
-                                        "Size": 3
+                                        "Size": 20
                                     }
                                 ],
                                 "Pictures": [

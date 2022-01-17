@@ -6,9 +6,9 @@ from .config_defaults import FFMPEG_BINARY, IMAGEMAGICK_BINARY
 
 if os.name == 'nt':
     try:
-        import winreg as wr # py3k
+        import winreg as wr  # py3k
     except ImportError:
-        import _winreg as wr # py2k
+        import _winreg as wr  # py2k
 
 
 def try_cmd(cmd):
@@ -31,11 +31,13 @@ def try_cmd(cmd):
     else:
         return True, None
 
-if FFMPEG_BINARY=='ffmpeg-imageio':
+
+if FFMPEG_BINARY == 'ffmpeg-imageio':
     from imageio.plugins.ffmpeg import get_exe
+
     FFMPEG_BINARY = get_exe()
 
-elif FFMPEG_BINARY=='auto-detect':
+elif FFMPEG_BINARY == 'auto-detect':
 
     if try_cmd(['ffmpeg'])[0]:
         FFMPEG_BINARY = 'ffmpeg'
@@ -50,7 +52,7 @@ else:
             str(err) +
             " - The path specified for the ffmpeg binary might be wrong")
 
-if IMAGEMAGICK_BINARY=='auto-detect':
+if IMAGEMAGICK_BINARY == 'auto-detect':
     if os.name == 'nt':
         try:
             key = wr.OpenKey(wr.HKEY_LOCAL_MACHINE, 'SOFTWARE\\ImageMagick\\Current')
@@ -87,7 +89,7 @@ def get_setting(varname):
     """ Returns the value of a configuration variable. """
     gl = globals()
     if varname not in gl.keys():
-        raise ValueError("Unknown setting %s"%varname)
+        raise ValueError("Unknown setting %s" % varname)
     # Here, possibly add some code to raise exceptions if some
     # parameter isn't set set properly, explaining on how to set it.
     return gl[varname]
@@ -108,11 +110,11 @@ def change_settings(new_settings=None, filename=None):
 
 if __name__ == "__main__":
     if try_cmd([FFMPEG_BINARY])[0]:
-        print( "MoviePy : ffmpeg successfully found." )
+        print("MoviePy : ffmpeg successfully found.")
     else:
-        print( "MoviePy : can't find or access ffmpeg." )
+        print("MoviePy : can't find or access ffmpeg.")
 
     if try_cmd([IMAGEMAGICK_BINARY])[0]:
-        print( "MoviePy : ImageMagick successfully found." )
+        print("MoviePy : ImageMagick successfully found.")
     else:
-        print( "MoviePy : can't find or access ImageMagick." )
+        print("MoviePy : can't find or access ImageMagick.")
